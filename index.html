@@ -2687,23 +2687,13 @@ footer .flinks a:hover { color: var(--orange); }
 
                     fetch('https://script.google.com/macros/s/AKfycbybVmfKl8DmZvaMP4eXRaajXMa6Kcu02O1ZBkjalikHV85QFbsSmB7vBVZuxKeQ7HBX/exec', {
                         method: 'POST',
+                        mode: 'no-cors',
                         body: params
                     })
-                        .then(function (response) {
-                            if (!response.ok) {
-                                throw new Error('Server responded with status ' + response.status);
-                            }
-                            return response.text();
-                        })
-                        .then(function (text) {
-                            // Apps Script may return JSON like {"status":"success"} or {"status":"error","message":"..."}.
-                            // If it returns plain text instead, we just treat a non-empty 2xx response as success.
-                            var result = null;
-                            try { result = JSON.parse(text); } catch (parseErr) { /* not JSON, that's fine */ }
-                            if (result && result.status && result.status !== 'success') {
-                                throw new Error(result.message || 'Apps Script reported an error.');
-                            }
-                            console.log('Career form submission response:', text);
+                        .then(function () {
+                            // With mode: 'no-cors' the browser blocks us from reading Apps Script's
+                            // response, so we can't check its contents — reaching .then just means
+                            // the request was sent successfully.
                             form.style.display = 'none';
                             successContainer.style.display = 'block';
                         })
@@ -2938,20 +2928,10 @@ footer .flinks a:hover { color: var(--orange); }
         message: message
       });
 
-      fetch(UDAAN_SCRIPT_URL, { method: "POST", body: params })
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("Server responded with status " + response.status);
-          }
-          return response.text();
-        })
-        .then(function (text) {
-          var result = null;
-          try { result = JSON.parse(text); } catch (parseErr) { /* not JSON, that's fine */ }
-          if (result && result.status && result.status !== "success") {
-            throw new Error(result.message || "Apps Script reported an error.");
-          }
-          console.log("Enquiry form submission response:", text);
+      fetch(UDAAN_SCRIPT_URL, { method: "POST", mode: "no-cors", body: params })
+        .then(function () {
+          // With mode: 'no-cors' the browser blocks us from reading Apps Script's
+          // response, so reaching here just means the request was sent successfully.
           status.textContent = getLang() === "ne"
             ? "धन्यवाद! तपाईंको सोधपुछ पठाइयो।"
             : "Thank you! Your enquiry has been sent.";

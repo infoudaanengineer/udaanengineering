@@ -2312,10 +2312,59 @@ footer .flinks a:hover { color: var(--orange); }
                 fileError.style.display = 'none';
             }
 
-            // Submit Success Display
+            // Submit to Google Sheets / Drive, then show success
             if (isValid) {
-                form.style.display = 'none';
-                successContainer.style.display = 'block';
+                const submitBtn = form.querySelector('.btn-submit');
+                const middleName = document.getElementById('middleName');
+                const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span>Submitting...</span>';
+                }
+
+                const file = cvFileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function () {
+                    const cvBase64 = reader.result.split(',')[1];
+                    const params = new URLSearchParams({
+                        formType: 'Career',
+                        first_name: firstName.value.trim(),
+                        middle_name: middleName ? middleName.value.trim() : '',
+                        last_name: lastName.value.trim(),
+                        phone: phoneInput.value.trim(),
+                        email: emailInput.value.trim(),
+                        role: roleInput.value.trim(),
+                        cover_note: coverNote.value.trim(),
+                        cvBase64: cvBase64,
+                        cvName: file.name
+                    });
+
+                    fetch('https://script.google.com/macros/s/AKfycby_PCofZGMN52CIbi3jY1OAfWGKCoM_cIlelR9EnhBH1nJS1NOH0ENDGt31Zk0Q2ogDIw/exec', {
+                        method: 'POST',
+                        body: params
+                    })
+                        .then(function () {
+                            form.style.display = 'none';
+                            successContainer.style.display = 'block';
+                        })
+                        .catch(function () {
+                            alert('Something went wrong submitting your application. Please try again.');
+                        })
+                        .finally(function () {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalBtnHTML;
+                            }
+                        });
+                };
+                reader.onerror = function () {
+                    alert('Could not read your CV file. Please try attaching it again.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHTML;
+                    }
+                };
+                reader.readAsDataURL(file);
             }
         });
 
@@ -2475,6 +2524,8 @@ footer .flinks a:hover { color: var(--orange); }
     });
   }
 
+  var UDAAN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_PCofZGMN52CIbi3jY1OAfWGKCoM_cIlelR9EnhBH1nJS1NOH0ENDGt31Zk0Q2ogDIw/exec";
+
   function initContactForm() {
     var form = document.getElementById("contact-form");
     if (!form) return;
@@ -2482,6 +2533,7 @@ footer .flinks a:hover { color: var(--orange); }
       e.preventDefault();
       var status = document.getElementById("form-status");
       var name = form.querySelector('[name="name"]').value.trim();
+      var phone = form.querySelector('[name="phone"]').value.trim();
       var email = form.querySelector('[name="email"]').value.trim();
       var message = form.querySelector('[name="message"]').value.trim();
       if (!name || !email || !message) {
@@ -2491,13 +2543,37 @@ footer .flinks a:hover { color: var(--orange); }
         status.className = "form-status error";
         return;
       }
-      var subject = encodeURIComponent("Website enquiry from " + name);
-      var body = encodeURIComponent(message + "\n\n— " + name + " (" + email + ")");
-      window.location.href = "mailto:info.udaanengineer@gmail.com?subject=" + subject + "&body=" + body;
-      status.textContent = getLang() === "ne"
-        ? "तपाईंको मेल एप खुल्दैछ — पठाउन Send थिच्नुहोस्।"
-        : "Opening your email app — hit send to reach us.";
+
+      var submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      status.textContent = getLang() === "ne" ? "पठाउँदै..." : "Sending...";
       status.className = "form-status ok";
+
+      var params = new URLSearchParams({
+        formType: "Enquiry",
+        name: name,
+        phone: phone,
+        email: email,
+        message: message
+      });
+
+      fetch(UDAAN_SCRIPT_URL, { method: "POST", body: params })
+        .then(function () {
+          status.textContent = getLang() === "ne"
+            ? "धन्यवाद! तपाईंको सोधपुछ पठाइयो।"
+            : "Thank you! Your enquiry has been sent.";
+          status.className = "form-status ok";
+          form.reset();
+        })
+        .catch(function () {
+          status.textContent = getLang() === "ne"
+            ? "पठाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।"
+            : "Something went wrong. Please try again.";
+          status.className = "form-status error";
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
     });
   }
 

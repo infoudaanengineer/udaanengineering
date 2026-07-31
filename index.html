@@ -3261,7 +3261,11 @@ footer .flinks a:hover { color: var(--orange); }
       document.querySelectorAll('[data-ci-text="email"]').forEach(function (el) { el.textContent = email; });
     }
     if (info.company_name) {
-      document.querySelectorAll('[data-ci-text="company_name"]').forEach(function (el) { el.textContent = info.company_name; });
+      var isNeNow = document.documentElement.classList.contains("lang-ne");
+      document.querySelectorAll('[data-ci-text="company_name"]').forEach(function (el) {
+        el.setAttribute("data-en", info.company_name);
+        el.textContent = isNeNow ? (el.getAttribute("data-ne") || info.company_name) : info.company_name;
+      });
     }
     if (info.facebook_link) {
       document.querySelectorAll(".social-icon.facebook").forEach(function (el) {
